@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <endian.h>
 
+#include "bus.h"
 #include "memory.h"
 
 bool init_mem(riscv_mem *mem, const char *filename) {

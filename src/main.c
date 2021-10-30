@@ -15,7 +15,8 @@ int main(int argc, char *argv[]) {
     }
 
     // 取出一条指令，执行一条指令
-    while (emu->cpu.pc < emu->cpu.memory.code_size) {
+    uint64_t start_pc = emu->cpu.pc;
+    while (emu->cpu.pc < start_pc + emu->cpu.bus.memory.code_size) {
         // 取出指令
         uint32_t inst = fetch(&emu->cpu);
         // 将pc指向将要执行的下一条指令

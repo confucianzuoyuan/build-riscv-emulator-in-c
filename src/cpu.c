@@ -1,17 +1,16 @@
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "cpu.h"
 
 bool init_cpu(riscv_cpu *cpu, const char *filename) {
-    if (!init_mem(&cpu->memory, filename)) return false;
+    if (!init_bus(&cpu->bus, filename)) return false;
 
     memset(&cpu->xreg[0], 0, sizeof(uint64_t) * 32);
 
-    cpu->pc = 0;
+    cpu->pc = DRAM_BASE;
     cpu->xreg[2] = DRAM_BASE + DRAM_SIZE; // 1GiB
     return true;
 }
@@ -21,11 +20,7 @@ bool init_cpu(riscv_cpu *cpu, const char *filename) {
 // 由于二进制文件是以小端序存储的
 // 所以需要转换成大端序
 uint32_t fetch(riscv_cpu *cpu) {
-    uint64_t index = cpu->pc;
-    return (uint32_t) cpu->memory.mem[index] |
-           (uint32_t)(cpu->memory.mem[index + 1]) << 8 |
-           (uint32_t)(cpu->memory.mem[index + 2]) << 16 |
-           (uint32_t)(cpu->memory.mem[index + 3]) << 24;
+    return read_bus(&cpu->bus, cpu->pc, 32);
 }
 
 void exec(riscv_cpu *cpu, uint32_t inst) {
@@ -42,6 +37,16 @@ void exec(riscv_cpu *cpu, uint32_t inst) {
     // 取出高位的12个bit，就是立即数
     uint64_t imm = asr_i64((int) (inst & 0xfff00000), 20);
 
+    // 对于unsigned整型溢出，C的规范是有定义的——“溢出后的数会以2^(8*sizeof(type))作模运算”，
+    // 也就是说，如果一个unsigned char（1字符，8bits）溢出了，会把溢出的值与256求模。
+    // #include <stdio.h>
+    // int main(int argc, const char * argv[]) {
+    //   // insert code here...
+    //   unsigned char x;
+    //   x = 128 + 130;
+    //   printf("%d\n",x);  
+    // }
+    // 上面代码会输出：2，258以256为模的结果值是2。
     switch (opcode) {
         //addi
         case 0x13:
@@ -65,5 +70,5 @@ void dump_reg(riscv_cpu *cpu) {
 }
 
 void free_cpu(riscv_cpu *cpu) {
-    free_memory(&cpu->memory);
+    free_bus(&cpu->bus);
 }
