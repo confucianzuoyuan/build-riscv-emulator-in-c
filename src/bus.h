@@ -6,7 +6,7 @@
 // DRAM内存开始的地址
 #define DRAM_BASE 0x80000000
 
-typedef struct BUS {
+typedef struct {
     riscv_mem memory;
 } riscv_bus;
 

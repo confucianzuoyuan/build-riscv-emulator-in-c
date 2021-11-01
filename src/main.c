@@ -18,11 +18,15 @@ int main(int argc, char *argv[]) {
     uint64_t start_pc = emu->cpu.pc;
     while (emu->cpu.pc < start_pc + emu->cpu.bus.memory.code_size) {
         // 取出指令
-        uint32_t inst = fetch(&emu->cpu);
+        fetch(&emu->cpu);
         // 将pc指向将要执行的下一条指令
         emu->cpu.pc += 4;
+        // 解码将要执行的指令
+        bool ret = decode(&emu->cpu);
+        if (ret == false)
+            break;
         // 执行指令
-        exec(&emu->cpu, inst);
+        exec(&emu->cpu);
     }
 
     dump_reg(&emu->cpu);

@@ -3,15 +3,59 @@
 
 #include "bus.h"
 
-typedef struct Cpu {
+// riscv指令的结构体
+typedef struct {
+    uint32_t instr;
+    uint8_t opcode;
+    uint8_t rd;
+    uint8_t rs1;
+    uint8_t rs2;
+    uint64_t imm;
+    uint8_t funct3;
+    uint8_t funct7;
+} riscv_instr;
+
+typedef struct CPU riscv_cpu;
+typedef struct CPU {
     riscv_bus bus;
+    riscv_instr instr;
+    // 共三十二个寄存器：x0 ... x31
     uint64_t xreg[32];
+    // 程序计数器：program counter
     uint64_t pc;
+
+    // 函数指针类型，指向执行指令的函数
+    void (*exec_func)(riscv_cpu *cpu);
 } riscv_cpu;
 
+typedef struct {
+    enum {
+        OPCODE,
+        FUNC3,
+        FUNC7,
+    } type;
+} riscv_instr_desc_type;
+
+typedef struct {
+    riscv_instr_desc_type type;
+    uint64_t size;
+    struct INSTR_ENTRY *instr_list;
+} riscv_instr_desc;
+
+typedef struct INSTR_ENTRY {
+    // 函数指针类型，类型名为exec_func，输入为cpu，输出为void
+    void (*exec_func)(riscv_cpu *cpu);
+    riscv_instr_desc *next;
+} riscv_instr_entry;
+
+#define INIT_RISCV_INSTR_LIST(_type, _instr)  \
+    static riscv_instr_desc _instr##_list = { \
+        {_type}, sizeof(_instr) / sizeof(_instr[0]), _instr}
+
 bool init_cpu(riscv_cpu *cpu, const char *filename);
-uint32_t fetch(riscv_cpu *cpu);
-bool exec(riscv_cpu *cpu, uint32_t inst);
+void fetch(riscv_cpu *cpu);
+bool decode(riscv_cpu *cpu);
+void exec(riscv_cpu *cpu);
 void dump_reg(riscv_cpu *cpu);
 void free_cpu(riscv_cpu *cpu);
 
